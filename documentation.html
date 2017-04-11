@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <link href="CSS/style.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="feature">
+        <div class="feature-inner">
+            <h1>Data Visualization</h1>
+            <h3>An interactive visualization of supply and use tables with Sankey diagrams</h3>
+        </div>
+    </div>
+    <div id="page">
+        <header id="header">
+            <div id="header-inner">
+
+                <div id="top-nav">
+                    <ul>
+                        <li><a href="home.html">Project Concept</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="code.html">Code</a></li>
+                        <li><a href="demo.html">Demo</a></li>
+                        <li><a href="future_work.html">Future Work</a></li>
+                    </ul>
+                </div>
+                <div class="clr"></div>
+            </div>
+        </header>
+        
+        <div id="content">
+            <div id="content-inner">
+                <a style="font-size:medium; color:green; font-weight:bold">Contents</a> <br>
+                <a style="color:green" href="#div_introduction">Introduction</a> <br>
+                <a style="color:green" href="#div_structure">Project Structure</a> <br>
+                <a style="color:green" href="#div_d3">D3 (Data Driven Documents)</a> <br>
+                <a style="color:green" href="#div_data">Data Parsing</a> <br>
+                <a style="color:green" href="#div_svg">Describing Required SVG Elements</a> <br>
+                <a style="color:green" href="#div_dataStore">Server Side Data Storage</a> <br> <br>
+                <div id="div_introduction">
+                    <h2>Introduction</h2>
+                    The Sankey diagram requires data in three columns – source, target and value – describing what to connect to what and with what thickness line.
+
+                    <br>
+
+                </div>
+
+                <br>
+
+                <div id="div_structure" >
+                    <h2>Project Structure</h2>
+                    
+                    <img style="border:thick;  display: block; margin: 0 auto;" height="600" width="700"  src="resource_files/project.jpg" />
+                    <br>
+
+                </div>
+
+                <br>
+
+                <div id="div_d3" >
+                    <h2>D3 (Data Driven Documents)</h2>
+
+                    Data-Driven Documents (or D3) is a JavaScript API library for producing dynamic, interactive data visualizations for the web.
+                    D3 enables direct inspection and manipulation of the standard document object model (DOM).
+                    Technically, D3.js is a very thin layer on top of modern web technologies to build powerful data visualization with the effective use of SVG, JSON, JQuery, HTML5 and CSS. 
+                    It uses pre-built JavaScript functions to select elements, create SVG objects, style them, add transitions or dynamic effects (according to user's requirement) to them, 
+                    which can easily be decorated with CSS.
+                    <br>
+                    Large and complex datasets can be easily bound after parsing into various formats (mostly JSON and CSV) to SVG objects using simple D3.js functions to generate rich text/graphic 
+                    charts and diagrams (<a style="color:green" href="https://d3js.org/">see more</a>).
+                    <br><br>
+
+                    The functionality of D3 can be separated into four categories:
+                    <br>
+                    1. Loading data. <br>
+                    2. Binding data to elements. <br>
+                    3. Transforming elements by inspecting the bound data, and updating the bound properties of the elements. <br>
+                    4. Transitioning elements in response to user interaction. <br>
+
+
+                    <br>
+
+                </div>
+
+                <br>
+
+                <h3> Description of the code</h3>
+
+                <br>
+
+                <div style="background: #f8f8f8; overflow:auto;width:auto;background-color: #fbedbb;     color: #000000;     font-size: 12px;">
+                    <table>
+                        <tr>
+                            <td>
+                                <pre style="margin: 0; line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29</pre>
+                            </td>
+                            <td>
+                                <pre style="margin: 0; line-height: 125%"><span style="color: #008000; font-weight: bold">var</span> link <span style="color: #666666">=</span> svg.append(<span style="color: #BA2121">&quot;g&quot;</span>).selectAll(<span style="color: #BA2121">&quot;.link&quot;</span>)
+            .data(json_data.links)
+            .enter()
+            .append(<span style="color: #BA2121">&quot;path&quot;</span>)
+            .attr(<span style="color: #BA2121">&quot;class&quot;</span>, <span style="color: #BA2121">&quot;link&quot;</span>)
+            .attr(<span style="color: #BA2121">&quot;d&quot;</span>, path)
+            .style(<span style="color: #BA2121">&quot;fill&quot;</span>, <span style="color: #BA2121">&quot;none&quot;</span>)
+            .style(<span style="color: #BA2121">&quot;stroke-width&quot;</span>, <span style="color: #008000; font-weight: bold">function</span> (d) {<span style="color: #008000; font-weight: bold">return</span> <span style="color: #008000">Math</span>.max(<span style="color: #666666">1</span>, (d.dy));})
+            .style(<span style="color: #BA2121">&quot;stroke&quot;</span>, <span style="color: #008000; font-weight: bold">function</span> (d) {
+                                <span style="color: #008000; font-weight: bold">return</span> d.color <span style="color: #666666">?</span> d.color
+                                <span style="color: #666666">:</span> d.source.inherit_right <span style="color: #666666">?</span> d.source.color
+                                <span style="color: #666666">:</span> d.target.inherit_left <span style="color: #666666">?</span> d.target.color
+                                <span style="color: #666666">:</span> data_set.default_flow_inherit <span style="color: #666666">===</span> <span style="color: #BA2121">&quot;source&quot;</span> <span style="color: #666666">?</span> d.source.color
+                                <span style="color: #666666">:</span> data_set.default_flow_inherit <span style="color: #666666">===</span> <span style="color: #BA2121">&quot;target&quot;</span> <span style="color: #666666">?</span> d.target.color
+                                <span style="color: #666666">:</span> data_set.default_flow_color;
+            })
+            .style(<span style="color: #BA2121">&quot;stroke-opacity&quot;</span>, <span style="color: #008000; font-weight: bold">function</span> (d) {
+                                <span style="color: #008000; font-weight: bold">return</span> d.opacity <span style="color: #666666">||</span> data_set.default_flow_opacity;
+            })
+            .on(<span style="color: #BA2121">&#39;mouseover&#39;</span>, <span style="color: #008000; font-weight: bold">function</span> (d) {
+                d3.select(<span style="color: #008000; font-weight: bold">this</span>).style(<span style="color: #BA2121">&quot;stroke-opacity&quot;</span>,
+                    d.opacity_on_hover
+                                <span style="color: #666666">||</span> ((<span style="color: #008000">Number</span>(data_set.default_flow_opacity) <span style="color: #666666">+</span> <span style="color: #666666">1</span>) <span style="color: #666666">/</span> <span style="color: #666666">2</span>));
+            })
+            .on(<span style="color: #BA2121">&#39;mouseout&#39;</span>, <span style="color: #008000; font-weight: bold">function</span> (d) {
+                d3.select(<span style="color: #008000; font-weight: bold">this</span>).style(<span style="color: #BA2121">&quot;stroke-opacity&quot;</span>,
+                    d.opacity <span style="color: #666666">||</span> data_set.default_flow_opacity);
+            })
+            .sort(<span style="color: #008000; font-weight: bold">function</span> (a, b) { <span style="color: #008000; font-weight: bold">return</span> b.dy <span style="color: #666666">-</span> a.dy; });
+</pre>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <br>
+                
+                <br>
+                <!-- HTML generated using hilite.me --><div style="background: #f8f8f8; overflow:auto;width:auto;background-color: #fbedbb;     color: #000000;     font-size: 12px;">
+                    <table>
+                        <tr>
+                            <td>
+                                <pre style="margin: 0; line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41</pre>
+                            </td>
+                            <td>
+                                <pre style="margin: 0; line-height: 125%">sankey.link <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">function</span> () {
+                                <span style="color: #008000; font-weight: bold">function</span> link(d) {
+                                <span style="color: #008000; font-weight: bold">var</span> x0 <span style="color: #666666">=</span> d.source.x <span style="color: #666666">+</span> d.source.dx,
+                x1 <span style="color: #666666">=</span> d.target.x,
+                xi <span style="color: #666666">=</span> d3.interpolateNumber(x0, x1),
+                y0 <span style="color: #666666">=</span> d.source.y <span style="color: #666666">+</span> d.sy <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>,
+                y1 <span style="color: #666666">=</span> d.target.y <span style="color: #666666">+</span> d.ty <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>,
+                x_2 <span style="color: #666666">=</span> d.source.x <span style="color: #666666">+</span> (d.source.dx <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle)),
+                y_2 <span style="color: #666666">=</span> d.source.y <span style="color: #666666">+</span> (d.source.dx <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle)),
+                x0_r <span style="color: #666666">=</span> x_2 <span style="color: #666666">-</span> ((d.sy <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>) <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle)),
+                y0_r <span style="color: #666666">=</span> y_2 <span style="color: #666666">+</span> ((d.sy <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>) <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle)),
+                x_2_t <span style="color: #666666">=</span> d.target.x <span style="color: #666666">+</span> (<span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.target.angle)),
+                y_2_t <span style="color: #666666">=</span> d.target.y <span style="color: #666666">+</span> (<span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.target.angle)),
+                x1_r <span style="color: #666666">=</span> x_2_t <span style="color: #666666">-</span> ((d.ty <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>) <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.target.angle)),
+                y1_r <span style="color: #666666">=</span> y_2_t <span style="color: #666666">+</span> ((d.ty <span style="color: #666666">+</span> d.dy <span style="color: #666666">/</span> <span style="color: #666666">2</span>) <span style="color: #666666">*</span> <span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.target.angle)),
+                distance <span style="color: #666666">=</span> <span style="color: #008000">Math</span>.sqrt((x0 <span style="color: #666666">-</span> x1) <span style="color: #666666">*</span> (x0 <span style="color: #666666">-</span> x1) <span style="color: #666666">+</span> (y0 <span style="color: #666666">-</span> y1) <span style="color: #666666">*</span> (y0 <span style="color: #666666">-</span> y1))
+                y0_r_r <span style="color: #666666">=</span> y0_r,
+                y1_r_r <span style="color: #666666">=</span> y1_r,
+                x2 <span style="color: #666666">=</span> x0_r <span style="color: #666666">+</span> <span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle) <span style="color: #666666">*</span> distance <span style="color: #666666">*</span> curvature,
+                y0_r_r <span style="color: #666666">=</span> y0_r <span style="color: #666666">+</span> <span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> d.source.angle) <span style="color: #666666">*</span> distance <span style="color: #666666">*</span> curvature,
+                x3 <span style="color: #666666">=</span> x1_r <span style="color: #666666">+</span> <span style="color: #008000">Math</span>.cos((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> (d.target.angle <span style="color: #666666">+</span> <span style="color: #666666">180</span>)) <span style="color: #666666">*</span> distance <span style="color: #666666">*</span> curvature,
+                y1_r_r <span style="color: #666666">=</span> y1_r <span style="color: #666666">+</span> <span style="color: #008000">Math</span>.sin((<span style="color: #008000">Math</span>.PI <span style="color: #666666">/</span> <span style="color: #666666">180</span>) <span style="color: #666666">*</span> (d.target.angle <span style="color: #666666">+</span> <span style="color: #666666">180</span>)) <span style="color: #666666">*</span> distance <span style="color: #666666">*</span> curvature;
+                                <span style="color: #008000; font-weight: bold">return</span> <span style="color: #BA2121">&quot;M&quot;</span> <span style="color: #666666">+</span> x0_r <span style="color: #666666">+</span> <span style="color: #BA2121">&quot;,&quot;</span> <span style="color: #666666">+</span> y0_r
+                                <span style="color: #666666">+</span> <span style="color: #BA2121">&quot;C&quot;</span> <span style="color: #666666">+</span> x2 <span style="color: #666666">+</span> <span style="color: #BA2121">&quot;,&quot;</span> <span style="color: #666666">+</span> y0_r_r
+                                <span style="color: #666666">+</span> <span style="color: #BA2121">&quot; &quot;</span> <span style="color: #666666">+</span> x3 <span style="color: #666666">+</span> <span style="color: #BA2121">&quot;,&quot;</span> <span style="color: #666666">+</span> y1_r_r
+                                <span style="color: #666666">+</span> <span style="color: #BA2121">&quot; &quot;</span> <span style="color: #666666">+</span> x1_r <span style="color: #666666">+</span> <span style="color: #BA2121">&quot;,&quot;</span> <span style="color: #666666">+</span> y1_r;
+            }
+        link.curvature <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">function</span> (_) {
+                                <span style="color: #008000; font-weight: bold">if</span> (<span style="color: #666666">!</span>arguments.length) <span style="color: #008000; font-weight: bold">return</span> curvature;
+            curvature <span style="color: #666666">=</span> <span style="color: #666666">+</span>_;
+                                <span style="color: #008000; font-weight: bold">return</span> link;
+        };
+                                <span style="color: #008000; font-weight: bold">return</span> link;
+    };
+</pre>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="clr"></div>
+            </div>
+
+        </div>
+
+
+       
+    </div>
+</body>
+</html>

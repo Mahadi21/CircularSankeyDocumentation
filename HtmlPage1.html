@@ -1,0 +1,398 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+</head>
+<body>
+    <div class="date-posts">
+
+        <div class="post-outer">
+            <div class="post hentry" itemprop="blogPost" itemscope="itemscope" itemtype="http://schema.org/BlogPosting">
+              
+                <h3 class="post-title entry-title" itemprop="name">
+                    Sankey Diagrams: A Description of the d3.js Code
+                </h3>
+                <div class="post-header">
+                    <div class="post-header-line-1"></div>
+                </div>
+                <div>
+
+                    <br>
+                    <h3 id="description-of-the-code">
+                        Description of the code
+                    </h3>
+                    The code for the Sankey diagram is significantly different to that for a line graph although it shares the same core language and programming methodology.<br>
+                    <br>
+                    The code we’ll go through is an adaptation of the&nbsp;<a href="http://bost.ocks.org/mike/sankey/">version first demonstrated by Mike Bostock</a>&nbsp;so it’s got a pretty good pedigree. I will begin with a version that uses data that is formatted so that it can be used directly with no manipulation, then in subsequent sections I will describe different techniques for getting data from different formats to work.<br>
+                    <br>
+                    I found that getting data in the correct format was the biggest hurdle for getting a Sankey diagram to work. I make the assumption that this may be a similar story for others as well. We will start off assuming that the data is perfectly formatted, then where only the link data is available then where there is just names to work with (no numeric node values) and lastly, one that can be used for people with changeable data from a MySQL database.<br>
+                    <br>
+                    I won’t try to go over every inch of the code as I did with the previous simple graph example (I’ll skip things like the HTML header) and will focus on the style sheet (CSS) portion and the JavaScript.<br>
+                    The complete code for this will also be available as an appendix and in the downloads section at d3noob.org.<br>
+                    <br>
+                    On to the code…<br>
+<pre style="background: #002240; color: white;">&lt;<span style="color: #9effff;">style</span>&gt;
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> rect <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">cursor</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">move</span><span style="color: #e1efff;">;</span>
+  fill-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.9</span><span style="color: #e1efff;">;</span>
+  shape-rendering<span style="color: #e1efff;">:</span> crispEdges<span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> text <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">pointer-events</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+                    <span style="color: #9df39f;">text-shadow</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">0</span> <span style="color: #edf080;">1<span style="color: #ff9d00;">px</span></span> <span style="color: #edf080;">0</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>fff</span><span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span> <span style="color: #e1efff;">{</span>
+  fill<span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+  stroke<span style="color: #e1efff;">:</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>000</span><span style="color: #e1efff;">;</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.2</span><span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span><span style="color: #ffdd00;"><span style="color: #e1efff;">:</span>hover</span> <span style="color: #e1efff;">{</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.5</span><span style="color: #e1efff;">;</span>
+}
+&lt;/<span style="color: #9effff;">style</span>&gt;
+</pre>
+                    <br>
+<pre style="background: #002240; color: white;"><span style="color: #9effff;"><span style="color: #e1efff;">&lt;</span><span style="color: #9effff;">body</span><span style="color: #e1efff;">&gt;</span></span>
+<span style="color: #9effff;"><span style="color: #e1efff;">&lt;</span><span style="color: #9effff;">p</span> <span style="color: #9effff;">id</span><span style="color: #e1efff;">=</span><span style="color: #3ad900;">"</span><span style="color: #3ad900;">chart</span><span style="color: #3ad900;">"</span><span style="color: #e1efff;">&gt;</span></span>
+<span style="color: #9effff;"><span style="color: #e1efff;">&lt;</span><span style="color: #9effff;">script</span> <span style="color: #9effff;">type</span>=<span style="color: #3ad900;">"</span>text/javascript<span style="color: #3ad900;">"</span> <span style="color: #9effff;">src</span>=<span style="color: #3ad900;">"</span>d3/d3.v3.js<span style="color: #3ad900;">"</span><span style="color: #e1efff;">&gt;&lt;/</span><span style="color: #9effff;">script</span><span style="color: #e1efff;">&gt;</span></span>
+<span style="color: #9effff;"><span style="color: #e1efff;">&lt;</span><span style="color: #9effff;">script</span> <span style="color: #9effff;">src</span>=<span style="color: #3ad900;">"</span>js/sankey.js<span style="color: #3ad900;">"</span><span style="color: #e1efff;">&gt;&lt;/</span><span style="color: #9effff;">script</span><span style="color: #e1efff;">&gt;</span></span>
+<span style="color: #e1efff;">&lt;</span><span style="color: #ffdd00;">script</span><span style="color: #e1efff;">&gt;</span>
+</pre>
+                    <br>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> units <span style="color: #ff9d00;">=</span> <span style="color: #3ad900;">"</span>Widgets<span style="color: #3ad900;">"</span><span style="color: #e1efff;">;</span>
+<span style="color: #ffee80;">var</span> margin <span style="color: #ff9d00;">=</span> {top: <span style="color: #ff628c;">10</span>, right: <span style="color: #ff628c;">10</span>, bottom: <span style="color: #ff628c;">10</span>, left: <span style="color: #ff628c;">10</span>},
+    width <span style="color: #ff9d00;">=</span> <span style="color: #ff628c;">700</span> <span style="color: #ff9d00;">-</span> margin.<span style="color: #eb939a;">left</span> &ndash; margin.<span style="color: #eb939a;">right</span>,
+    height <span style="color: #ff9d00;">=</span> <span style="color: #ff628c;">300</span> <span style="color: #ff9d00;">-</span> margin.<span style="color: #eb939a;">top</span> &ndash; margin.<span style="color: #eb939a;">bottom</span><span style="color: #e1efff;">;</span>
+<span style="color: #ffee80;">var</span> formatNumber <span style="color: #ff9d00;">=</span> d3.format(<span style="color: #3ad900;">"</span>,.0f<span style="color: #3ad900;">"</span>),    <span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> zero decimal places</span>
+                    <span style="color: #ffdd00;">format</span> <span style="color: #ff9d00;">=</span> <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> formatNumber(d) <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span> <span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> units<span style="color: #e1efff;">;</span> },
+    color <span style="color: #ff9d00;">=</span> d3.scale.category20()<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> append the svg canvas to the page</span>
+<span style="color: #ffee80;">var</span> svg <span style="color: #ff9d00;">=</span> d3.<span style="color: #ffb054;">select</span>(<span style="color: #3ad900;">"</span>#chart<span style="color: #3ad900;">"</span>).append(<span style="color: #3ad900;">"</span>svg<span style="color: #3ad900;">"</span>)
+    .attr(<span style="color: #3ad900;">"</span>width<span style="color: #3ad900;">"</span>, width <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">left</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">right</span>)
+    .attr(<span style="color: #3ad900;">"</span>height<span style="color: #3ad900;">"</span>, height <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">top</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">bottom</span>)
+  .append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>)
+    .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, 
+                    <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">left</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">top</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> Set the sankey diagram properties</span>
+<span style="color: #ffee80;">var</span> sankey <span style="color: #ff9d00;">=</span> d3.sankey()
+    .nodeWidth(<span style="color: #ff628c;">36</span>)
+    .nodePadding(<span style="color: #ff628c;">40</span>)
+    .<span style="color: #eb939a;">size</span>([width, height])<span style="color: #e1efff;">;</span>
+<span style="color: #ffee80;">var</span> path <span style="color: #ff9d00;">=</span> sankey.<span style="color: #ffb054;">link</span>()<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> load the data</span>
+d3.json(<span style="color: #3ad900;">"</span>data/sankey-formatted.json<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(error, graph) {
+  sankey
+      .nodes(graph.nodes)
+      .<span style="color: #eb939a;">links</span>(graph.<span style="color: #eb939a;">links</span>)
+      .layout(<span style="color: #ff628c;">32</span>)<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> add in the links</span>
+                    <span style="color: #ffee80;">var</span> link <span style="color: #ff9d00;">=</span> svg.append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>).selectAll(<span style="color: #3ad900;">"</span>.link<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">data</span>(graph.<span style="color: #eb939a;">links</span>)
+    .enter().append(<span style="color: #3ad900;">"</span>path<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>class<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>link<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>d<span style="color: #3ad900;">"</span>, path)
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>stroke-width<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">1</span>, d.dy)<span style="color: #e1efff;">;</span> })
+      .<span style="color: #ffb054;">sort</span>(<span style="color: #ffee80;">function</span>(a, b) { <span style="color: #ff9d00;">return</span> b.dy <span style="color: #ff9d00;">-</span> a.dy<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> add the link titles</span>
+  link.append(<span style="color: #3ad900;">"</span>title<span style="color: #3ad900;">"</span>)
+        .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) {
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">source</span>.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span> → <span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> 
+                d.<span style="color: #eb939a;">target</span>.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span><span style="color: #80ff82;">\n</span><span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> format(d.<span style="color: #eb939a;">value</span>)<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> add in the nodes</span>
+                    <span style="color: #ffee80;">var</span> node <span style="color: #ff9d00;">=</span> svg.append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>).selectAll(<span style="color: #3ad900;">"</span>.node<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">data</span>(graph.nodes)
+    .enter().append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>class<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> d.<span style="color: #eb939a;">y</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span><span style="color: #e1efff;">;</span> })
+    .<span style="color: #ffb054;">call</span>(d3.behavior.drag()
+      .origin(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d<span style="color: #e1efff;">;</span> })
+      .on(<span style="color: #3ad900;">"</span>dragstart<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>() { 
+                    <span style="color: #ff80e1;">this</span>.<span style="color: #eb939a;">parentNode</span>.<span style="color: #ffb054;">appendChild</span>(<span style="color: #ff80e1;">this</span>)<span style="color: #e1efff;">;</span> })
+      .on(<span style="color: #3ad900;">"</span>drag<span style="color: #3ad900;">"</span>, dragmove))<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> add the rectangles for the nodes</span>
+  node.append(<span style="color: #3ad900;">"</span>rect<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>height<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.dy<span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>width<span style="color: #3ad900;">"</span>, sankey.nodeWidth())
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>fill<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">color</span> <span style="color: #ff9d00;">=</span> color(d.<span style="color: #eb939a;">name</span>.<span style="color: #ffb054;">replace</span>(<span style="color: #80ffc2;"><span style="color: #3ad900;">/</span> .*<span style="color: #3ad900;">/</span></span>, <span style="color: #3ad900;">"</span><span style="color: #3ad900;">"</span>))<span style="color: #e1efff;">;</span> })
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>stroke<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d3.rgb(d.<span style="color: #eb939a;">color</span>).darker(<span style="color: #ff628c;">2</span>)<span style="color: #e1efff;">;</span> })
+    .append(<span style="color: #3ad900;">"</span>title<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span><span style="color: #80ff82;">\n</span><span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> format(d.<span style="color: #eb939a;">value</span>)<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> add in the title for the nodes</span>
+  node.append(<span style="color: #3ad900;">"</span>text<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>x<span style="color: #3ad900;">"</span>, <span style="color: #ff9d00;">-</span><span style="color: #ff628c;">6</span>)
+      .attr(<span style="color: #3ad900;">"</span>y<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.dy / <span style="color: #ff628c;">2</span><span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>dy<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>.35em<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>text-anchor<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>end<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, <span style="color: #ff628c;">null</span>)
+      .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">name</span><span style="color: #e1efff;">;</span> })
+    .filter(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">&lt;</span> width / <span style="color: #ff628c;">2</span><span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>x<span style="color: #3ad900;">"</span>, <span style="color: #ff628c;">6</span> <span style="color: #ff9d00;">+</span> sankey.nodeWidth())
+      .attr(<span style="color: #3ad900;">"</span>text-anchor<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>start<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+<span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> the function for moving the nodes</span>
+                    <span style="color: #ffee80;">function</span> <span style="color: #ffdd00;">dragmove</span>(d) {
+    d3.<span style="color: #ffb054;">select</span>(<span style="color: #ff80e1;">this</span>).attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, 
+                    <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> (
+            d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">=</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">0</span>, <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">min</span>(width <span style="color: #ff9d00;">-</span> d.dx, d3.<span style="color: #80ffbb;">event</span>.<span style="color: #eb939a;">x</span>))
+        )
+                    <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> (
+            d.<span style="color: #eb939a;">y</span> <span style="color: #ff9d00;">=</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">0</span>, <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">min</span>(height <span style="color: #ff9d00;">-</span> d.dy, d3.<span style="color: #80ffbb;">event</span>.<span style="color: #eb939a;">y</span>))
+        ) <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+    sankey.relayout()<span style="color: #e1efff;">;</span>
+    link.attr(<span style="color: #3ad900;">"</span>d<span style="color: #3ad900;">"</span>, path)<span style="color: #e1efff;">;</span>
+  }
+})<span style="color: #e1efff;">;</span>
+</pre>
+                    So, going straight to the style sheet bounded by the&nbsp;<code>&lt;style&gt;</code>&nbsp;tags;<br>
+<pre style="background: #002240; color: white;"><span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> rect <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">cursor</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">move</span><span style="color: #e1efff;">;</span>
+  fill-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.9</span><span style="color: #e1efff;">;</span>
+  shape-rendering<span style="color: #e1efff;">:</span> crispEdges<span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> text <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">pointer-events</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+                    <span style="color: #9df39f;">text-shadow</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">0</span> <span style="color: #edf080;">1<span style="color: #ff9d00;">px</span></span> <span style="color: #edf080;">0</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>fff</span><span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span> <span style="color: #e1efff;">{</span>
+  fill<span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+  stroke<span style="color: #e1efff;">:</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>000</span><span style="color: #e1efff;">;</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.2</span><span style="color: #e1efff;">;</span>
+}
+<span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span><span style="color: #ffdd00;"><span style="color: #e1efff;">:</span>hover</span> <span style="color: #e1efff;">{</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.5</span><span style="color: #e1efff;">;</span>
+}
+</pre>
+                    The CSS in this example is mainly concerned with formatting of the mouse cursor as it moves around the diagram.<br>
+                    <br>
+                    The first part…<br>
+<pre style="background: #002240; color: white;"><span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> rect <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">cursor</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">move</span><span style="color: #e1efff;">;</span>
+  fill-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.9</span><span style="color: #e1efff;">;</span>
+  shape-rendering<span style="color: #e1efff;">:</span> crispEdges<span style="color: #e1efff;">;</span>
+}
+</pre>
+                    … provides the properties for the node rectangles. It changes the icon for the cursor when it moves over the rectangle to one that looks like it will move the rectangle (there is a range of different icons that can be defined here http://www.echoecho.com/csscursors.htm), sets the fill colour to mostly opaque and keeps the edges sharp.<br>
+                    <br>
+                    The next block…<br>
+<pre style="background: #002240; color: white;"><span style="color: #5fe461;"><span style="color: #e1efff;">.</span>node</span> text <span style="color: #e1efff;">{</span>
+                    <span style="color: #9df39f;">pointer-events</span><span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+                    <span style="color: #9df39f;">text-shadow</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">0</span> <span style="color: #edf080;">1<span style="color: #ff9d00;">px</span></span> <span style="color: #edf080;">0</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>fff</span><span style="color: #e1efff;">;</span>
+}
+</pre>
+                    … sets the properties for the text at each node. The mouse is told to essentially ignore the text in favour of anything that’s under it (in the case of moving or highlighting something else) and a slight shadow is applied for readability).<br>
+                    <br>
+                    The following block…<br>
+<pre style="background: #002240; color: white;"><span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span> <span style="color: #e1efff;">{</span>
+  fill<span style="color: #e1efff;">:</span> <span style="color: #f6f080;">none</span><span style="color: #e1efff;">;</span>
+  stroke<span style="color: #e1efff;">:</span> <span style="color: #edf080;"><span style="color: #e1efff;">#</span>000</span><span style="color: #e1efff;">;</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.2</span><span style="color: #e1efff;">;</span>
+}
+</pre>
+                    … makes sure that the link has no fill (it actually appears to be a bendy rectangle with very thick edges that make the element appear to be a solid block), colours the edges black (<code>#000</code>) and gives makes the edges almost transparent.<br>
+                    <br>
+                    The last block….<br>
+<pre style="background: #002240; color: white;"><span style="color: #5fe461;"><span style="color: #e1efff;">.</span>link</span><span style="color: #ffdd00;"><span style="color: #e1efff;">:</span>hover</span> <span style="color: #e1efff;">{</span>
+  stroke-<span style="color: #9df39f;">opacity</span><span style="color: #e1efff;">:</span> <span style="color: #edf080;">.5</span><span style="color: #e1efff;">;</span>
+}
+</pre>
+                    … simply changes the opacity of the link when the mouse goes over it so that it’s more visible. If so desired, we could change the colour of the highlighted link by adding in a line to this block changing the colour like this&nbsp;<code>stroke: red;</code>.<br>
+                    <br>
+                    Just before we get into the JavaScript, we do something a little different for d3.js. We tells it to use a plug-in with the&nbsp;following&nbsp;line;<br>
+                    <br>
+<pre><code class="nt">&lt;script </code><code class="na">src=</code><code class="s">"js/sankey.js"</code><code class="nt">&gt;&lt;/script&gt;</code></pre>
+<pre></pre>
+<pre><span style="font-family: Times, Times New Roman, serif;">The concept of a plug-in is that it is a separate piece of code that will allow additional functionality to a core block (which in this case is d3.js). There are a range of <a href="https://github.com/d3/d3-plugins">plug-ins available</a> and we will need to source the sankey.js file from the repository and place that somewhere where our HTML code can access it. In this case I have put it in the js directory that resides in the root directory of the web page. </span>
+<span style="font-family: Times, Times New Roman, serif;">
+The start of our JavaScript begins by defining a range of variables that we’ll be using. 
+Our units are set as ‘Widgets’ (var units = "Widgets";), which is just a convenient generic (nonsense) term to provide the impression that the flow of items in this case is widgets being passed from one person to another.</span><code class="nt">
+<div style="font-family: 'Times New Roman'; white-space: normal;">
+We then set our canvas size and margins…</div>
+</code></pre>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> margin <span style="color: #ff9d00;">=</span> {top: <span style="color: #ff628c;">10</span>, right: <span style="color: #ff628c;">10</span>, bottom: <span style="color: #ff628c;">10</span>, left: <span style="color: #ff628c;">10</span>},
+    width <span style="color: #ff9d00;">=</span> <span style="color: #ff628c;">700</span> <span style="color: #ff9d00;">-</span> margin.<span style="color: #eb939a;">left</span> &ndash; margin.<span style="color: #eb939a;">right</span>,
+    height <span style="color: #ff9d00;">=</span> <span style="color: #ff628c;">300</span> <span style="color: #ff9d00;">-</span> margin.<span style="color: #eb939a;">top</span> &ndash; margin.<span style="color: #eb939a;">bottom</span><span style="color: #e1efff;">;</span>
+</pre>
+                    … before setting some formatting.<br>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> formatNumber <span style="color: #ff9d00;">=</span> d3.format(<span style="color: #3ad900;">"</span>,.0f<span style="color: #3ad900;">"</span>),    <span style="color: #0088ff; font-style: italic;"><span style="color: #e1efff;">//</span> decimal places</span>
+                    <span style="color: #ffdd00;">format</span> <span style="color: #ff9d00;">=</span> <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> formatNumber(d) <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span> <span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> units<span style="color: #e1efff;">;</span> },
+    color <span style="color: #ff9d00;">=</span> d3.scale.category20()<span style="color: #e1efff;">;</span>
+</pre>
+                    The&nbsp;<code>formatNumber</code>&nbsp;function acts on a number to set it to zero decimal places in this case. In the original Mike Bostock example it was to three places, but for ‘widgets’ I’m presuming we don’t divide :-).<br>
+                    <br>
+                    <code>format</code>&nbsp;is a function that returns a given number formatted with&nbsp;<code>formatNumber</code>&nbsp;as well as a space and our units of choice (‘Widgets’). This is used to display the values for the links and nodes later in the script.<br>
+                    The&nbsp;<code>color = d3.scale.category20();</code>&nbsp;line is really interesting and provides access to a colour scale that is&nbsp;<a href="https://github.com/mbostock/d3/wiki/Ordinal-Scales#wiki-category10">pre-defined for your convenience</a>!. Later in the code we will see it in action.<br>
+                    <br>
+                    Our next block sites our canvas onto our page in relation to the size and margins we have already defined;<br>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> svg <span style="color: #ff9d00;">=</span> d3.<span style="color: #ffb054;">select</span>(<span style="color: #3ad900;">"</span>#chart<span style="color: #3ad900;">"</span>).append(<span style="color: #3ad900;">"</span>svg<span style="color: #3ad900;">"</span>)
+    .attr(<span style="color: #3ad900;">"</span>width<span style="color: #3ad900;">"</span>, width <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">left</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">right</span>)
+    .attr(<span style="color: #3ad900;">"</span>height<span style="color: #3ad900;">"</span>, height <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">top</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">bottom</span>)
+  .append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>)
+    .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, 
+                    <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">left</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> margin.<span style="color: #eb939a;">top</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+</pre>
+                    Then we set the variables for our Sankey diagram;<br>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> sankey <span style="color: #ff9d00;">=</span> d3.sankey()
+    .nodeWidth(<span style="color: #ff628c;">36</span>)
+    .nodePadding(<span style="color: #ff628c;">40</span>)
+    .<span style="color: #eb939a;">size</span>([width, height])<span style="color: #e1efff;">;</span>
+</pre>
+                    Without trying to state the obvious, this sets the width of the nodes (<code>.nodeWidth(36)</code>), the padding between the nodes (<code>.nodePadding(40)</code>) and the size of the diagram(<code>.size([width, height]);</code>).<br>
+                    <br>
+                    The following line defines the&nbsp;<code>path</code>&nbsp;variable as a pointer to the sankey function that make the links between the nodes to their clever thing of bending into the right places.;<br>
+<pre style="background: #002240; color: white;"><span style="color: #ffee80;">var</span> path <span style="color: #ff9d00;">=</span> sankey.<span style="color: #ffb054;">link</span>()<span style="color: #e1efff;">;</span>
+</pre>
+                    I make the presumption that this is a defined function within&nbsp;<code>sankey.js</code>. Then we load the data for our sankey diagram with the following line;<br>
+<pre style="background: #002240; color: white;">d3.json(<span style="color: #3ad900;">"</span>data/sankey-formatted.json<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(error, graph) {
+</pre>
+                    As we have seen in previous usage of the&nbsp;<code>d3.json</code>,&nbsp;<code>d3.csv</code>&nbsp;and&nbsp;<code>d3.tsv</code>&nbsp;functions this is a wrapper that acts on all the code within it bringing the data in the form of&nbsp;<code>graph</code>&nbsp;to the remaining code.<br>
+                    <br>
+                    I think it’s a good time to take a slightly closer look at the data that we’ll be using;<br>
+<pre style="background: #002240; color: white;"><span style="color: #e1efff;">{</span>
+<span style="color: #3ad900;">"</span>nodes<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #e1efff;">[</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">0</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>name<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #3ad900;">"</span>node0<span style="color: #3ad900;">"</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">1</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>name<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #3ad900;">"</span>node1<span style="color: #3ad900;">"</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>name<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #3ad900;">"</span>node2<span style="color: #3ad900;">"</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">3</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>name<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #3ad900;">"</span>node3<span style="color: #3ad900;">"</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">4</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>name<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #3ad900;">"</span>node4<span style="color: #3ad900;">"</span><span style="color: #e1efff;">}</span>
+<span style="color: #e1efff;">]</span><span style="color: #e1efff;">,</span>
+<span style="color: #3ad900;">"</span>links<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #e1efff;">[</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">0</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">1</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">1</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">3</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">0</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">4</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">3</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">4</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">2</span><span style="color: #e1efff;">}</span><span style="color: #e1efff;">,</span>
+<span style="color: #e1efff;">{</span><span style="color: #3ad900;">"</span>source<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">3</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>target<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">4</span><span style="color: #e1efff;">,</span><span style="color: #3ad900;">"</span>value<span style="color: #3ad900;">"</span><span style="color: #e1efff;">:</span><span style="color: #ff628c;">4</span><span style="color: #e1efff;">}</span>
+<span style="color: #e1efff;">]</span><span style="color: #e1efff;">}</span>
+</pre>
+                    I want to look at the data now, because it highlights how it is accessed throughout this portion of the code. It is split into two different blocks, ‘nodes’ and ‘links’. The subset of variables available under ‘nodes’ is ‘node’ and ‘name’. Likewise under ‘links’ we have ‘source’, ‘target’ and ‘value’. This means that when we want to act on a subset of our data we define which piece by defining the hierarchy that leads to it. For instance, if we want to define an action onto all the links, we would use graph.links (they’re kind of chained together).<br>
+                    <div class="information sidebarish">
+                    </div>
+                    <br>
+                    Let me take this opportunity to apologise to all those programmers who&nbsp;<em>actually</em>&nbsp;know exactly what is going on here. It’s a mystery to me, but this is how I like to tell myself it works to help me get by :-)<br>
+                    <br>
+                    So, now that we have our data loaded, we can assign the data to the sankey function so that it knows how to deal with it behind the scenes;<br>
+<pre style="background: #002240; color: white;">  sankey
+      .nodes(graph.nodes)
+      .<span style="color: #eb939a;">links</span>(graph.<span style="color: #eb939a;">links</span>)
+      .layout(<span style="color: #ff628c;">32</span>)<span style="color: #e1efff;">;</span>
+</pre>
+                    In keeping with our previous description of what’s going on with the data, we have told the sankey function that the nodes it will be dealing with are in&nbsp;<code>graph.nodes</code>&nbsp;of our data structure.<br>
+                    <br>
+                    I’m not sure what the&nbsp;<code>.layout(32);</code>&nbsp;portion of the code does, but I’d be interested know from any more knowledgeable readers. I’ve tried changing the values to no apparent affect and googling has drawn a blank. Internally to the&nbsp;<code>sankey.js</code>&nbsp;file it seems to indicate ‘iterations’ while it establishes computeNodeLinks, computeNodeValues, computeNodeBreadths, computeNodeDepths(iterations) and computeLinkDepths.<br>
+                    <br>
+                    Then we add our links to the diagram with the following block of code;<br>
+<pre style="background: #002240; color: white;">  <span style="color: #ffee80;">var</span> link <span style="color: #ff9d00;">=</span> svg.append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>).selectAll(<span style="color: #3ad900;">"</span>.link<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">data</span>(graph.<span style="color: #eb939a;">links</span>)
+    .enter().append(<span style="color: #3ad900;">"</span>path<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>class<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>link<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>d<span style="color: #3ad900;">"</span>, path)
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>stroke-width<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">1</span>, d.dy)<span style="color: #e1efff;">;</span> })
+      .<span style="color: #ffb054;">sort</span>(<span style="color: #ffee80;">function</span>(a, b) { <span style="color: #ff9d00;">return</span> b.dy <span style="color: #ff9d00;">-</span> a.dy<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+</pre>
+                    This is an analogue of the block of code we examined way back in the section that we covered in explaining the code of our first simple graph.<br>
+                    <br>
+                    We append svg elements for our links based on the data in&nbsp;<code>graph.links</code>, then add in the paths (using the appropriate CSS). We set the stroke width to the width of the value associated with each link or ‘1’. Whichever is the larger (by virtue of the Math.max function). As an interesting sideline, if we force this value to ‘10’ thusly…<br>
+<pre style="background: #002240; color: white;">      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>stroke-width<span style="color: #3ad900;">"</span>, <span style="color: #ff628c;">10</span>)
+</pre>
+                    … the graph looks quite interesting.<br>
+                    <div class="separator" style="clear: both; text-align: center;">
+                        <a href="http://2.bp.blogspot.com/-RCfIoiKKPRE/USSJNJijP6I/AAAAAAAAAGA/zyENzQcqrV0/s1600/sankey03.png" imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img src="http://2.bp.blogspot.com/-RCfIoiKKPRE/USSJNJijP6I/AAAAAAAAAGA/zyENzQcqrV0/s640/sankey03.png" height="272" border="0" width="640"></a>
+                    </div>
+                    <br>
+                    I have to admit that I don’t know what the sort line (<code>.sort(function(a, b) { return b.dy - a.dy; });</code>) is supposed to achieve. Again, I’d be interested know from any more knowledgeable readers. I’ve tried changing the values to no apparent affect.<br>
+                    <br>
+                    The next block adds the titles to the links;<br>
+<pre style="background: #002240; color: white;">  link.append(<span style="color: #3ad900;">"</span>title<span style="color: #3ad900;">"</span>)
+        .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) {
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">source</span>.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span> → <span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> 
+                        d.<span style="color: #eb939a;">target</span>.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span><span style="color: #80ff82;">\n</span><span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> format(d.<span style="color: #eb939a;">value</span>)<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+</pre>
+                    This code appends a text element to each link when moused over that contains the source and target name (with a neat little arrow in between and the value (which when applied with the&nbsp;<code>format</code>&nbsp;function adds the units.<br>
+                    <br>
+                    The next block appends the node objects (but not the rectangles or text) and contains the instructions to allow them to be arranged with the mouse.<br>
+<pre style="background: #002240; color: white;">  <span style="color: #ffee80;">var</span> node <span style="color: #ff9d00;">=</span> svg.append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>).selectAll(<span style="color: #3ad900;">"</span>.node<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">data</span>(graph.nodes)
+    .enter().append(<span style="color: #3ad900;">"</span>g<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>class<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>node<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> d.<span style="color: #eb939a;">y</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span><span style="color: #e1efff;">;</span> })
+    .<span style="color: #ffb054;">call</span>(d3.behavior.drag()
+      .origin(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d<span style="color: #e1efff;">;</span> })
+      .on(<span style="color: #3ad900;">"</span>dragstart<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>() { 
+                    <span style="color: #ff80e1;">this</span>.<span style="color: #eb939a;">parentNode</span>.<span style="color: #ffb054;">appendChild</span>(<span style="color: #ff80e1;">this</span>)<span style="color: #e1efff;">;</span> })
+      .on(<span style="color: #3ad900;">"</span>drag<span style="color: #3ad900;">"</span>, dragmove))<span style="color: #e1efff;">;</span>
+</pre>
+                    While it starts off in familiar territory with appending the node objects using the&nbsp;<code>graph.nodes</code>&nbsp;data and putting them in the appropriate place with the&nbsp;<code>transform</code>&nbsp;attribute, I can only assume that there is some trickery going on behind the scenes to make sure the mouse can do what it needs to do with the&nbsp;<code>d3.behaviour,drag</code>&nbsp;function. There is some excellent documentation on the wiki (https://github.com/mbostock/d3/wiki/Drag-behavior), but I can only presume that it knows what it’s doing :-). The&nbsp;<code>dragmove</code>&nbsp;function is laid out at the end of the code, and we will explain how that operates later.<br>
+                    <br>
+                    I really enjoyed the next block;<br>
+<pre style="background: #002240; color: white;">  node.append(<span style="color: #3ad900;">"</span>rect<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>height<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.dy<span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>width<span style="color: #3ad900;">"</span>, sankey.nodeWidth())
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>fill<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">color</span> <span style="color: #ff9d00;">=</span> color(d.<span style="color: #eb939a;">name</span>.<span style="color: #ffb054;">replace</span>(<span style="color: #80ffc2;"><span style="color: #3ad900;">/</span> .*<span style="color: #3ad900;">/</span></span>, <span style="color: #3ad900;">"</span><span style="color: #3ad900;">"</span>))<span style="color: #e1efff;">;</span> })
+      .<span style="color: #eb939a;">style</span>(<span style="color: #3ad900;">"</span>stroke<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d3.rgb(d.<span style="color: #eb939a;">color</span>).darker(<span style="color: #ff628c;">2</span>)<span style="color: #e1efff;">;</span> })
+    .append(<span style="color: #3ad900;">"</span>title<span style="color: #3ad900;">"</span>)
+      .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) { 
+                    <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">name</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span><span style="color: #80ff82;">\n</span><span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> format(d.<span style="color: #eb939a;">value</span>)<span style="color: #e1efff;">;</span> })<span style="color: #e1efff;">;</span>
+</pre>
+                    It starts off with a fairly standard appending of a rectangle with a height generated by its value <span style="font-family: Courier New, Courier, monospace;">&nbsp;{ return d.dy; }</span> and a width dictated by the sankey.js file to fit the canvas <code>(</code>.attr(“width”, sankey.nodeWidth())`).<br>
+                    Then it gets interesting.<br>
+                    <br>
+                    The colours are assigned in accordance with our earlier colour declaration and the individual colours are added to the nodes by finding the first part of the name for each node and assigning it a colour from the palate (the script looks for the first space in the name using a regular expression). For instance: ‘Widget X’, ‘Widget Y’ and ‘Widget’ will all be coloured the same even if the ‘Widget X’ and ‘Widget Y’ are inputs on the left and ‘Widget’ is a node in the middle.<br>
+                    <br>
+                    The stroke around the outside of the rectangle is then done the the same shade, but&nbsp;<code>darker</code>. Then we return to the basics where we add the title of the node in a tool tip type effect along with the value for the node.<br>
+                    <br>
+                    Then we add the titles for the nodes;<br>
+<pre style="background: #002240; color: white;">   node.append(<span style="color: #3ad900;">"</span>text<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>x<span style="color: #3ad900;">"</span>, <span style="color: #ff9d00;">-</span><span style="color: #ff628c;">6</span>)
+      .attr(<span style="color: #3ad900;">"</span>y<span style="color: #3ad900;">"</span>, <span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.dy / <span style="color: #ff628c;">2</span><span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>dy<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>.35em<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>text-anchor<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>end<span style="color: #3ad900;">"</span>)
+      .attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, <span style="color: #ff628c;">null</span>)
+      .<span style="color: #eb939a;">text</span>(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">name</span><span style="color: #e1efff;">;</span> })
+    .filter(<span style="color: #ffee80;">function</span>(d) { <span style="color: #ff9d00;">return</span> d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">&lt;</span> width / <span style="color: #ff628c;">2</span><span style="color: #e1efff;">;</span> })
+      .attr(<span style="color: #3ad900;">"</span>x<span style="color: #3ad900;">"</span>, <span style="color: #ff628c;">6</span> <span style="color: #ff9d00;">+</span> sankey.nodeWidth())
+      .attr(<span style="color: #3ad900;">"</span>text-anchor<span style="color: #3ad900;">"</span>, <span style="color: #3ad900;">"</span>start<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+</pre>
+                    Again, this looks pretty familiar. We position the text titles carefully to the left of the nodes carefully. All except for those affected by the filter function (<code>return d.x &lt; width / 2;</code>). Where if the position of the node on the x axis is less than half the width, the title is placed on the right of the node and anchored at the start of the text. Very neat.<br>
+                    <br>
+                    The last block is also pretty neat, and contains a little surprise for those who are so inclined.<br>
+<pre style="background: #002240; color: white;">  <span style="color: #ffee80;">function</span> <span style="color: #ffdd00;">dragmove</span>(d) {
+    d3.<span style="color: #ffb054;">select</span>(<span style="color: #ff80e1;">this</span>).attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, 
+                    <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> (
+                d.<span style="color: #eb939a;">y</span> <span style="color: #ff9d00;">=</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">0</span>, <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">min</span>(height <span style="color: #ff9d00;">-</span> d.dy, d3.<span style="color: #80ffbb;">event</span>.<span style="color: #eb939a;">y</span>))
+            ) <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+    sankey.relayout()<span style="color: #e1efff;">;</span>
+    link.attr(<span style="color: #3ad900;">"</span>d<span style="color: #3ad900;">"</span>, path)<span style="color: #e1efff;">;</span>
+</pre>
+                    This declares the function that controls the movement of the nodes with the mouse. It selects the item that it’s operating over (<code>d3.select(this)</code>) and then allows translation in the y axis while maintaining the link connection (<code>sankey.relayout(); link.attr("d", path);</code>).<br>
+                    <br>
+                    But that’s not the cool part. A quick look at the code should reveal that if you can move a node in the y axis, there should be no reason why you can’t move it in the x axis as well!<br>
+                    <br>
+                    Sure enough, if you replace the code above with this…<br>
+<pre style="background: #002240; color: white;">  <span style="color: #ffee80;">function</span> <span style="color: #ffdd00;">dragmove</span>(d) {
+    d3.<span style="color: #ffb054;">select</span>(<span style="color: #ff80e1;">this</span>).attr(<span style="color: #3ad900;">"</span>transform<span style="color: #3ad900;">"</span>, 
+                    <span style="color: #3ad900;">"</span>translate(<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> (
+            d.<span style="color: #eb939a;">x</span> <span style="color: #ff9d00;">=</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">0</span>, <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">min</span>(width <span style="color: #ff9d00;">-</span> d.dx, d3.<span style="color: #80ffbb;">event</span>.<span style="color: #eb939a;">x</span>))
+        )
+                    <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>,<span style="color: #3ad900;">"</span> <span style="color: #ff9d00;">+</span> (
+            d.<span style="color: #eb939a;">y</span> <span style="color: #ff9d00;">=</span> <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">max</span>(<span style="color: #ff628c;">0</span>, <span style="color: #80ffbb;">Math</span>.<span style="color: #ffb054;">min</span>(height <span style="color: #ff9d00;">-</span> d.dy, d3.<span style="color: #80ffbb;">event</span>.<span style="color: #eb939a;">y</span>))
+        ) <span style="color: #ff9d00;">+</span> <span style="color: #3ad900;">"</span>)<span style="color: #3ad900;">"</span>)<span style="color: #e1efff;">;</span>
+    sankey.relayout()<span style="color: #e1efff;">;</span>
+    link.attr(<span style="color: #3ad900;">"</span>d<span style="color: #3ad900;">"</span>, path)<span style="color: #e1efff;">;</span>
+</pre>
+                    … you can move your nodes anywhere on the canvas.<br>
+                   
+                </div>
+               
+            </div>
+          
+        </div>
+    </div>
+</body>
+</html>
